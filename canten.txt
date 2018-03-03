@@ -1,0 +1,252 @@
+https://www.youtube.com/watch?v=VXZtPWRmya0&t=292s
+  can
+    diameter: 3-4.5 in
+    length: > 5 in
+
+  pigtail: RP-SMA
+  connector: n-type female chassis connector
+  1.25" of 12 guage copper wire
+  usb wireless adapter with antenna connector
+
+  http://www.turnpoint.net/wireless/cantennahowto.html
+
+
+http://mikestechblog.com/ubuntu-antenna/extend-you-wireless-network-with-a-diy-2-4-ghz-wifi-cantenna/
+  http://www.netstumbler.com/downloads/
+
+http://urbanwireless.info/antennas/waveguide-can-tenna
+  can
+    diameter: 70-110 mm
+    length:
+    smooth is better
+  
+  3.5' x 8' (6' min)
+  LMR-100 coaxial cable
+
+
+https://www.youtube.com/watch?v=KN_1oe3z7EQ
+  Belkin wireless g usb adapter
+  Welch's grapejuice can
+  BNC Jack - UG-1094 Radio Shack
+
+
+http://shop.oreilly.com/product/9780596002046.do
+
+https://www.youtube.com/watch?v=BOaFa5PE4qg&t=21s
+  90 x 265mm
+
+
+https://www.youtube.com/watch?v=BOaFa5PE4qg&t=21s
+  21 swg copper wire (thinner)
+  vistumbler
+
+https://www.youtube.com/watch?v=WkXsS-kTtPo
+  nSSIDer
+  strainer antenna
+
+https://www.youtube.com/watch?v=XRp6bYw2GvA
+  water bottle antenna filter
+  
+
+http://www.wikarekare.org/Antenna/WaveguideCan.html
+  calculator
+
+https://www.youtube.com/watch?v=IoPhkW5t7sI
+  2.4 GHz wavelength: 4.8"
+  Pirouette canister
+
+https://www.youtube.com/watch?v=51OgiZw0Zjc
+  toilet brush holders - amazon
+
+https://www.youtube.com/watch?v=MqQyIpaePpY
+  faxe beer can 1 liter
+  diameter: 86mm
+  channel 6
+  zip ties to secure N-connector
+
+
+Parts
+https://www.amazon.com/SODIAL-Female-Chassis-Connector-Adapter/dp/B00H3CRCO0
+
+
+====
+ a0
+====
+
+apt install zfsutils-linux
+wipefs -af /dev/sdb
+zpool create -f vol0 /dev/sdb
+zfs set compression=lz4 vol0
+zfs create vol0/git
+cd /vol0/git
+git clone https://github.com/dmlesc/can10uh.git
+
+
+======
+ kali
+======
+
+wget http://cdimage.kali.org/kali-2018.1/kali-linux-2018.1-amd64.iso
+sha256sum kali-linux-2018.1-amd64.iso
+  ed88466834ceeba65f426235ec191fb3580f71d50364ac5131daec1bf976b317  kali-linux-2018.1-amd64.iso
+wget http://cdimage.kali.org/current/SHA256SUMS
+wget http://cdimage.kali.org/current/SHA256SUMS.gpg
+gpg --verify SHA256SUMS.gpg SHA256SUMS
+grep kali-linux-2018.1-amd64.iso SHA256SUMS | sha256sum -c
+
+
+xfce
+4d2b843bdf34957adda3dc5a399edf15db493be99f8361065fb8d3449c23220a
+
+
+apt install openssh-server
+cd /etc/ssh
+mkdir default_keys
+mv ssh_host_* default_keys
+dpkg-reconfigure openssh-server
+systemctl enable ssh
+adduser --home /home/user
+nano /etc/ssh/ssh_config
+  AllowUsers user
+service ssh restart
+
+visudo
+  user ALL=(ALL) NOPASSWD: ALL
+
+
+======
+ paw0
+======
+
+sudo visudo
+  user ALL=(ALL) NOPASSWD: ALL
+
+apt install bridge-utils
+nano /etc/network/interfaces
+  auto lo
+  iface lo inet loopback
+
+  auto br0
+  iface br0 inet dhcp
+  bridge_ports ens32
+  bridge_stp off
+  bridge_fd 0
+  bridge_maxwait 0
+
+reboot
+
+apt install zfsutils-linux
+zpool create vol0 /dev/disk/by-id/ata-...
+zfs set compression=lz4 vol0
+
+apt remove --purge lxd lxd-client
+snap install lxd
+nano ~/.bashrc
+  export PATH=$PATH:/snap/bin:/var/lib/snapd/snap/bin
+
+lxd init
+  Do you want to configure a new storage pool (yes/no) [default=yes]?
+  Name of the new storage pool [default=default]:
+  Name of the storage backend to use (dir, btrfs, ceph, lvm, zfs) [default=zfs]:
+  Create a new ZFS pool (yes/no) [default=yes]? no
+  Name of the existing ZFS pool or dataset: vol0
+  Would you like LXD to be available over the network (yes/no) [default=no]?
+  Would you like stale cached images to be updated automatically (yes/no) [default=yes]?
+  Would you like to create a new network bridge (yes/no) [default=yes]? no
+  LXD has been successfully configured.
+
+lxc launch ubuntu:16.04 ap0
+lxc network attach br0 ap0 default eth0
+lxc restart ap0
+lxc config device add ap0 wls37 nic nictype="physical" parent="wls37" name="wls37"
+lxc exec ap0 bash
+
+apt update
+apt upgrade
+apt autoremove
+
+apt install wireless-tools wpasupplicant
+ifconfig wls37 up
+iwlist wls37 scan
+iwlist wls37 scan |grep ESSID
+
+nano /etc/network/interfaces
+  auto wls37
+  iface wls37 inet dhcp
+  wpa-ssid SSID
+  wpa-psk PASSWORD
+
+service networking restart
+ip addr
+
+
+iwconfig wls37
+
+man -k iw
+
+iwlist wls37 scanning
+iwlist wls37 rate
+iwlist wls37 channel
+
+
+
+apt install hostapd
+nano /etc/default/hostapd
+  DAEMON_CONF="/etc/hostapd/hostapd.conf"
+nano /etc/hostapd/hostapd.conf
+  auth_algs=1
+  beacon_int=50
+  channel=3
+  country_code=US
+  disassoc_low_ack=1
+  driver=nl80211
+  hw_mode=g
+  ht_capab=[HT40+][HT40-][SHORT-GI-40][RX-STBC1]
+  ieee80211d=1
+  ieee80211n=1
+  interface=wls37
+  require_ht=0
+  rsn_pairwise=CCMP
+  ssid=paw0
+  wmm_enabled=1
+  wpa=2
+  wpa_key_mgmt=WPA-PSK
+  wpa_passphrase=pointaccesswifis
+
+nano /etc/sysctl.conf
+  net.ipv4.ip_forward=1
+  net.ipv6.conf.all.forwarding=1
+
+nano /etc/rc.local
+  iptables -t nat -A POSTROUTING -o wlan1 -j MASQUERADE
+  iptables -A FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+  iptables -A FORWARD -i wlan0 -o wlan1 -j ACCEPT
+  exit 0
+
+apt install haveged
+apt install dnsmasq
+nano /etc/dnsmasq.conf
+interface=wlan0
+except-interface=wlan1
+dhcp-range=10.0.0.2,10.0.0.14,12h
+
+
+
+
+iw list | grep "Supported interface modes" -A 8
+
+nano /etc/hostapd/hostapd.conf
+interface=wls37       # the interface used by the AP
+hw_mode=g             # g simply means 2.4GHz band
+channel=10            # the channel to use
+ieee80211d=1          # limit the frequencies used to those allowed in the country
+country_code=FR       # the country code
+ieee80211n=1          # 802.11n support
+wmm_enabled=1         # QoS support
+
+ssid=paw0             # the name of the AP
+auth_algs=1           # 1=wpa, 2=wep, 3=both
+wpa=2                 # WPA2 only
+wpa_key_mgmt=WPA-PSK  
+rsn_pairwise=CCMP
+wpa_passphrase=pointaccesswifis
